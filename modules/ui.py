@@ -28,6 +28,7 @@ from modules.utilities import (
 )
 from modules.video_capture import VideoCapturer
 from modules.gettext import LanguageManager
+from modules import globals
 import platform
 
 if platform.system() == "Windows":
@@ -170,15 +171,19 @@ def create_root(start: Callable[[], None], destroy: Callable[[], None]) -> tkdnd
     select_face_button = ctk.CTkButton(
         main_frame, text=_("Select a face"), cursor="hand2", command=lambda: select_source_path()
     )
+
     select_face_button.place(relx=0.1, rely=0.4, relwidth=0.3, relheight=0.1)
     
     select_face_button.drop_target_register(tkdnd.DND_FILES)
     select_face_button.dnd_bind("<<Drop>>", lambda event: handle_drop_source(event))
 
+    select_face_button.place(relx=0.1, rely=0.375, relwidth=0.3, relheight=0.1)
+
+
     swap_faces_button = ctk.CTkButton(
         main_frame, text="↔", cursor="hand2", command=lambda: swap_faces_paths()
     )
-    swap_faces_button.place(relx=0.45, rely=0.4, relwidth=0.1, relheight=0.1)
+    swap_faces_button.place(relx=0.45, rely=0.375, relwidth=0.1, relheight=0.1)
 
     select_target_button = ctk.CTkButton(
         main_frame,
@@ -186,10 +191,42 @@ def create_root(start: Callable[[], None], destroy: Callable[[], None]) -> tkdnd
         cursor="hand2",
         command=lambda: select_target_path(),
     )
+
     select_target_button.place(relx=0.6, rely=0.4, relwidth=0.3, relheight=0.1)
     
     select_target_button.drop_target_register(tkdnd.DND_FILES)
     select_target_button.dnd_bind("<<Drop>>", lambda event: handle_drop_target(event))
+
+    select_target_button.place(relx=0.6, rely=0.375, relwidth=0.3, relheight=0.1)
+
+    transparency_values = ["0%","25%", "50%", "75%", "100%"]
+    transparency_var = ctk.StringVar(value="100%")  # Default to 100%
+
+    def on_transparency_change(value: str):
+        percentage = int(value.strip('%'))
+        modules.globals.opacity = percentage / 100.0
+
+        if percentage == 0:
+            modules.globals.fp_ui["face_enhancer"] = False
+            update_status("Transparency set to 0% - Face swapping disabled.")
+        elif percentage == 100:
+            modules.globals.face_swapper_enabled = True
+            update_status("Transparency set to 100%.")
+        else:
+            modules.globals.face_swapper_enabled = True
+            update_status(f"Transparency set to {value}")
+
+    transparency_label = ctk.CTkLabel(root, text="Transparency:")
+    transparency_label.place(relx=0.1, rely=0.5, relwidth=0.2, relheight=0.05)
+
+    transparency_dropdown = ctk.CTkOptionMenu(
+        root,
+        values=transparency_values,
+        variable=transparency_var,
+        command=on_transparency_change,
+    )
+    transparency_dropdown.place(relx=0.35, rely=0.5, relwidth=0.25, relheight=0.05)
+
 
     keep_fps_value = ctk.BooleanVar(value=modules.globals.keep_fps)
     keep_fps_checkbox = ctk.CTkSwitch(
@@ -441,7 +478,7 @@ def create_source_target_popup(
             POPUP.destroy()
             select_output_path(start)
         else:
-            update_pop_status("Atleast 1 source with target is required!")
+            update_pop_status("At least 1 source with target is required!")
 
     scrollable_frame = ctk.CTkScrollableFrame(
         POPUP, width=POPUP_SCROLL_WIDTH, height=POPUP_SCROLL_HEIGHT
@@ -501,7 +538,7 @@ def update_popup_source(
     global source_label_dict
 
     source_path = ctk.filedialog.askopenfilename(
-        title=_("select an source image"),
+        title=_("select a source image"),
         initialdir=RECENT_DIRECTORY_SOURCE,
         filetypes=[img_ft],
     )
@@ -596,7 +633,7 @@ def select_source_path() -> None:
 
     PREVIEW.withdraw()
     source_path = ctk.filedialog.askopenfilename(
-        title=_("select an source image"),
+        title=_("select a source image"),
         initialdir=RECENT_DIRECTORY_SOURCE,
         filetypes=[img_ft],
     )
@@ -639,7 +676,7 @@ def select_target_path() -> None:
 
     PREVIEW.withdraw()
     target_path = ctk.filedialog.askopenfilename(
-        title=_("select an target image or video"),
+        title=_("select a target image or video"),
         initialdir=RECENT_DIRECTORY_TARGET,
         filetypes=[img_ft, vid_ft],
     )
@@ -1118,7 +1155,7 @@ def update_webcam_source(
     global source_label_dict_live
 
     source_path = ctk.filedialog.askopenfilename(
-        title=_("select an source image"),
+        title=_("select a source image"),
         initialdir=RECENT_DIRECTORY_SOURCE,
         filetypes=[img_ft],
     )
@@ -1170,7 +1207,7 @@ def update_webcam_target(
     global target_label_dict_live
 
     target_path = ctk.filedialog.askopenfilename(
-        title=_("select an target image"),
+        title=_("select a target image"),
         initialdir=RECENT_DIRECTORY_SOURCE,
         filetypes=[img_ft],
     )
